@@ -32,7 +32,6 @@ class Welcome extends CI_Controller {
         ]);
         $user = $provider->getResourceOwner($token);
         pre($user);
-        pre($_REQUEST);
     }
     private function fb()
     {
