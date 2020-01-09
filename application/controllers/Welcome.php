@@ -13,9 +13,7 @@ class Welcome extends CI_Controller {
         
         $this->data['titulo'] = 'Login com Facebook';
          $this->fb();
-         $this->load->view('header', $this->data);
-         $this->load->view('index', $this->data);
-         $this->load->view('footer');
+         $this->load->view('welcome_message', $this->data);
     }
     
     private function fb()
@@ -27,10 +25,9 @@ class Welcome extends CI_Controller {
             'graphApiVersion'=>'v5.0'
         );
         $this->load->library('facebook2', $config);
+        $this->data['facebook2']=$this->facebook2;
         $loginParams = array('scope' => 'email','redirect_uri' => site_url().'/index/fb_auth');
-        $this->data['login_url'] = $this->facebook2->getLoginUrl($loginParams);
         $logoutParams = array( 'next' => site_url().'/index/logout');
-        $this->data['logout_url'] = $this->facebook2->getLogoutUrl($logoutParams);
     }
     
     public function fb_auth()
