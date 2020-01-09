@@ -13,7 +13,7 @@ class Welcome extends CI_Controller {
             'clientId'  => $this->client_id,
             'clientSecret' => $this->client_secret,
             'graphApiVersion'=>'v2.10',
-            'redirectUri'=>base_url('welcome/retorno')
+            'redirectUri'=>base_url('welcome/index')
         );
         $this->load->library('facebook2', $config);
     }
@@ -25,14 +25,7 @@ class Welcome extends CI_Controller {
          $this->fb();
          $this->load->view('welcome_message', $this->data);
     }
-    public function retorno(){
-        $provider = $this->facebook2;
-        $token = $provider->getAccessToken('authorization_code', [
-            'code' => $_GET['code']
-        ]);
-        $user = $provider->getResourceOwner($token);
-        pre($user);
-    }
+    
     private function fb()
     {
         $provider = $this->facebook2;
@@ -40,15 +33,15 @@ class Welcome extends CI_Controller {
 
             // If we don't have an authorization code then get one
             $authUrl = $provider->getAuthorizationUrl(array('scope' => 'email'));
-            $_SESSION['oauth2state'] = $provider->getState();
+            $this->session->set_userdata('oauth2state',$provider->getState());
             
             echo '<a href="'.$authUrl.'">Log in with Facebook!</a>';
             exit;
         
         // Check given state against previously stored one to mitigate CSRF attack
-        } elseif (empty($_GET['state']) || ($_GET['state'] !== $_SESSION['oauth2state'])) {
+        } elseif (empty($_GET['state']) || ($_GET['state'] !== $this->session->oauth2state)) {
         
-            unset($_SESSION['oauth2state']);
+            $this->session->unset_userdata('oauth2state');
             echo 'Invalid state.';
             exit;
         
@@ -68,10 +61,11 @@ class Welcome extends CI_Controller {
             // Use these details to create a new profile
             printf('Hello %s!', $user->getFirstName());
             
-            echo '<pre>';
-            var_dump($user);
-            # object(League\OAuth2\Client\Provider\FacebookUser)#10 (1) { ...
-            echo '</pre>';
+            $logoutUrl = base_url('welcome/logout');
+            echo '<a href="'.$logoutUrl.'">Sair</a>';
+            
+            
+            pre($user);
         
         } catch (\Exception $e) {
         
@@ -89,118 +83,8 @@ class Welcome extends CI_Controller {
         # int(1436825866)
         echo '</pre>';
     }
-    
-    public function fb_auth()
-    {
-        $config = array
-        (
-            'appId'  => '726421091202048',
-            'secret' => '746c9b5afe693487198535c9a3ed661c'
-        );
-        $this->load->library('facebook', $config);
-        $user = $this->facebook2->getUser();
-        if($user)
-        {
-            try
-            {
-                $user_profile = $this->facebook2->api('/me');
-                $this->session->set_userdata('user_profile', $user_profile);
-                redirect(site_url());
-            }
-            catch (FacebookApiException $e)
-            {
-                $user = null;
-            }
-        }
-    }
-
-    public function acessofacebook() {
-        session_destroy();
-        ob_start();
-        session_start();
-        if (empty($_SESSION["UserLogin"])) {
-
-            $config = array
-        (
-            'clientId'  => '600451487413800',
-            'clientSecret' => '330be096f90552ee5618f60599fc2638',
-            'graphApiVersion'=>'v2.10',
-            'redirectUri'=>base_url('retorno/index')
-        );
-            $facebook = $this->facebook2;
-            $authUrl = $facebook->getAuthorizationUrl([
-                "scope" => ["email"]
-            ]);
-            $error = filter_input(INPUT_GET, "error", FILTER_SANITIZE_STRIPPED);
-            // echo $error;
-            if ($error) {
-                echo 'Erro ao tentar se conectar ao facebook';
-            }
-            $code = filter_input(INPUT_GET, "code", FILTER_SANITIZE_STRIPPED);
-            if ($code) {
-                $token = $facebook->getAccessToken("authorization_code", [
-                    "code" => $code
-                ]);
-                $_SESSION["UserLogin"] = serialize($facebook->getResourceOwner($token));
-                $resultado = $facebook->getResourceOwner($token);
-                $reg = array();
-                //$reg["google_id"] = $resultado->getId();
-                $id = $resultado->getId();
-                
-                $rs_cliente = $bdCliente->getByParam(" where facebook_id = '$id' ");
-                $reg_cliente = Tabelas::PrepareDataSet($rs_cliente);
-                
-                
-                 if(is_array($reg_cliente) && count($reg_cliente)>0){
-                   
-                     // gravar na sessao
-                     $_SESSION["sessao_id"] = $resultado->getId();
-                     $_SESSION["sessao_nome"] = $resultado->getName();
-                     $_SESSION["sessao_nome_ultimo"] = $resultado->getFirstName();
-                     $_SESSION["sessao_foto"] = "https://".APP_HOST."/admin/App/Lib/arquivos/fotos/".$reg_cliente[0]["foto"];
-                     $_SESSION["sessao_email"] = $resultado->getEmail();
-                }else{
-                    
-                     // gravar na sessao
-                     $_SESSION["sessao_id"] = $resultado->getId();
-                     $_SESSION["sessao_nome"] = $resultado->getName();
-                     $_SESSION["sessao_nome_ultimo"] = $resultado->getFirstName();
-                     $_SESSION["sessao_foto"] = $resultado->getPictureUrl();
-                     $_SESSION["sessao_email"] = $resultado->getEmail();
-                     // gravar no banco
-                     $reg["facebook_id"]= $resultado->getId();
-                     $reg["nome"] = $resultado->getName();
-                     $reg["nome_meio"] = $resultado->getFirstName();
-                }
-                
-               
-            
-                
-                
-                
-                
-                
-                header("Location:$authUrl");
-            }
-            header("Location:$authUrl");
-            //echo "<a href='{$authUrl}'>Facebook Login</a>";
-        } else {
-            $this->render('home/home');
-        }
-        ob_end_flush();
-    }
-
-    
     public function logout(){
-        session_start();
-        //session_regenerate_id(true);
-
-        session_destroy();
-        session_abort();
-
-        unset($_SESSION);
-
-        session_unset();
-        redirect(site_url());
+        $this->session->set_userdata([]);
+        redirect(base_url());
     }
 }
