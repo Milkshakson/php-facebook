@@ -1,7 +1,8 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Welcome extends CI_Controller {
-    
+    public $client_id;
+    public $client_secret;
     
     public function  __construct()
     {
@@ -9,8 +10,8 @@ class Welcome extends CI_Controller {
         include_once('fb-credencial.php');
         $config = array
         (
-            'clientId'  => $client_id,
-            'clientSecret' => $client_secret,
+            'clientId'  => $this->client_id,
+            'clientSecret' => $this->client_secret,
             'graphApiVersion'=>'v2.10',
             'redirectUri'=>base_url('welcome/retorno')
         );
